@@ -5,14 +5,33 @@ defmodule Vips do
   Opens image source
   """
   def open(path) do
-    path = Path.expand(path)
-    unless File.regular?(path), do: raise(File.Error)
-
-    image = %Image{  path: Path.expand(path), ext: Path.extname(path), filename: Path.basename(path, Path.extname(path)), dirname: Path.dirname(path)}
-
-    %{image | inplace: Path.join(image.dirname, "#{:crypto.rand_uniform(100_000, 999_999)}" <> "-" <> image.filename  <> image.ext),
-              tmp:     Path.join(System.tmp_dir, "#{:crypto.rand_uniform(100_000, 999_999)}" <> "-" <> image.filename <> image.ext)}
+    path
+    |> file_check
+    |> expand_path
+    |> map_image
+    |> map_ext
+    |> map_filename
+    |> map_dirname
+    |> map_inplace
+    |> map_tmp
   end
+
+  defp file_check(path) do
+    cond do
+      File.regular?(path) == true ->
+        path
+
+      File.regular?(path) == false ->
+        raise(File.Error)
+    end
+  end
+  defp expand_path(path), do: Path.expand(path)
+  defp map_image(expanded_path), do: %Image{path: expanded_path}
+  defp map_ext(image), do: %{image | ext: Path.extname(image.path)}
+  defp map_filename(image), do: %{image | filename: Path.basename(image.path, image.ext)}
+  defp map_dirname(image), do: %{image | dirname: Path.dirname(image.path)}
+  defp map_inplace(image), do: %{image | inplace: Path.join(image.dirname, "#{:crypto.rand_uniform(100_000, 999_999)}" <> "-" <> image.filename  <> image.ext)}
+  defp map_tmp(image), do: %{image | tmp: Path.join(System.tmp_dir, "#{:crypto.rand_uniform(100_000, 999_999)}" <> "-" <> image.filename  <> image.ext)}
 
   @doc """
   Overwrite image source
